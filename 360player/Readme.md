@@ -45,3 +45,4 @@ Please follow [these](https://docs.google.com/document/d/18lGSDgB4gElmcdL4-vVISr
 
 ### Running
 Start with ```./360player [pathToConfig]``` or ```./360player.exe [pathToConfig]```
+

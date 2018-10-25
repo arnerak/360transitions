@@ -1,5 +1,7 @@
 ## Readme
 
+Server for video data delivery.
+
 Build with `g++ main.cpp -pthread -o 360server`
 Run with `./360server [pathToWWWDirectory]`
 
