@@ -1,0 +1,8 @@
+== EVAL ==
+/trace22.txt /trace24.txt /trace11.txt /trace47.txt /trace35.txt /trace53.txt 
+== CACHE INIT ==
+/trace21.txt /trace25.txt /trace9.txt /trace29.txt /trace1.txt /trace59.txt /trace38.txt /trace37.txt /trace43.txt /trace48.txt /trace11.txt /trace56.txt /trace58.txt /trace18.txt /trace27.txt 
+/trace34.txt /trace21.txt /trace23.txt /trace33.txt /trace7.txt /trace59.txt /trace43.txt /trace51.txt /trace48.txt /trace16.txt /trace54.txt /trace58.txt /trace20.txt /trace45.txt /trace10.txt 
+/trace30.txt /trace24.txt /trace52.txt /trace26.txt /trace57.txt /trace3.txt /trace43.txt /trace49.txt /trace42.txt /trace28.txt /trace47.txt /trace17.txt /trace31.txt /trace19.txt /trace50.txt 
+/trace21.txt /trace2.txt /trace24.txt /trace1.txt /trace59.txt /trace46.txt /trace57.txt /trace13.txt /trace41.txt /trace54.txt /trace35.txt /trace18.txt /trace8.txt /trace27.txt /trace45.txt 
+/trace34.txt /trace40.txt /trace55.txt /trace26.txt /trace59.txt /trace46.txt /trace37.txt /trace28.txt /trace41.txt /trace18.txt /trace20.txt /trace31.txt /trace27.txt /trace19.txt /trace10.txt 
