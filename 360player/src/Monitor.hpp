@@ -1,3 +1,8 @@
+/*
+	Author: Arne-Tobias Rak
+	TU Darmstadt
+*/
+
 #include "plot.h"
 #include "llist.h"
 #include "ConfigParser.hpp"
