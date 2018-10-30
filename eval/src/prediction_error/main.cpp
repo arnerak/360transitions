@@ -78,9 +78,6 @@ int main(int argc, char* argv[])
 			for (auto& f : std::experimental::filesystem::directory_iterator(config->headtracePath))
 			{
 				++j;
-				//if (j == 2)break;
-				//if (j < 20) continue;
-				//if (j == 21) break;
 
 				// parse trace file
 				headTrace = new HeadTrace(f.path().c_str());
@@ -89,14 +86,6 @@ int main(int argc, char* argv[])
 				static CircularBuffer<std::pair<long long, Quaternion>> headRotations;
 
 				headRotations.push({ 0, headTrace->rotationForTimestampIt(0)->second });
-
-				//au->initAdaption(headRotations[0]);
-				//for (int i = 0; i < numTiles; i++)
-				//{
-				//	auto initRes = httpClient->Get((mpd->getInitUrl(i)).c_str());
-				//	auto fsRes = au->download(i, 0);
-				//}
-				//au->stopAdaption();
 
 				int numSegments = mpd->period.adaptationSets[0].representations[0].segmentList.segmentUrls.size();
 				double frameRate = mpd->frameRate();
@@ -126,7 +115,6 @@ int main(int argc, char* argv[])
 				}
 				if (std::isnormal(errorAcc / numPredictions * (180.0 / PI)))
 					std::cout << predictionTime << "," << predictionTimeframe << "," << errorAcc / numPredictions * (180.0 / PI) << std::endl;
-				//au->printByteHitrate();
 			}
 		}
 	}

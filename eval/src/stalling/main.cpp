@@ -3,6 +3,9 @@
 	TU Darmstadt
 */
 
+#define WWWPATH "/home/arak/360server/www"
+#define TRACEPATH "/home/arak/360server/traces/mytrace.down"
+
 // Internal Includes
 #define BOOST_TYPEOF_EMULATION
 // Library/third-party includes
@@ -188,7 +191,7 @@ void initCache(const std::vector<pathType>& traces)
 	std::cout << std::endl;
 }
 
-void downloadTrace(pathType pathToTrace, std::function<void(int, std::vector<int>)> dlfun)
+void downloadTrace(pathType pathToTrace, std::function<void(int)> dlfun)
 {
 	auto srd = mpd->period.adaptationSets[0].srd;
 	int numTiles = srd.th * srd.tv;
@@ -199,8 +202,8 @@ void downloadTrace(pathType pathToTrace, std::function<void(int, std::vector<int
 
 	headRotations.push({ 0, headTrace->rotationForTimestampIt(0)->second });
 
-	auto dlOrder = au->initAdaption(headRotations[0]);
-	dlfun(0, dlOrder);
+	au->initAdaption(headRotations[0]);
+	dlfun(0);
 	au->stopAdaption();
 
 	int numSegments = mpd->period.adaptationSets[0].representations[0].segmentList.segmentUrls.size();
@@ -217,8 +220,8 @@ void downloadTrace(pathType pathToTrace, std::function<void(int, std::vector<int
 		auto itEnd = std::next(headTrace->rotationForTimestampIt(endTimestamp));
 		for (; it != itEnd; it++)
 			headRotations.push({ it->first * 1000.0, it->second });
-		auto downloadOrder = au->startAdaption(headRotations, i);
-		dlfun(i, downloadOrder);
+		au->startAdaption(headRotations, i);
+		dlfun(i);
 		au->stopAdaption();
 	}
 
@@ -229,18 +232,17 @@ void downloadTrace(pathType pathToTrace, std::function<void(int, std::vector<int
 
 static std::map<int, int> netTrace;
 static int netTraceDur;
-int computeSegmentDownloadTime(int timestamp, std::map<int, int> tileQuality, int segment, std::vector<int> downloadOrder)
+int computeSegmentDownloadTime(int timestamp, std::map<int, int> tileQuality, int segment)
 {
 	int dlTimeMs = 0;
 	int dlBytes = 0;
-	for (int i = 0; i < downloadOrder.size(); i++)
+	for (int i = 0; i < 16; i++)
 	{
-		int tileIndex = downloadOrder[i];
-		auto url = mpd->getUrl(segment, tileIndex, dlTimeMs * 0.75 > (mpd->segmentDuration() * 1000) ? 2 : tileQuality[tileIndex]);
+		auto url = mpd->getUrl(segment, i, tileQuality[i]);
 		if (au->isCached(url))
 			continue;
 
-		url = "/home/arak/360server/www" + url;
+		url = WWWPATH + url;
 		
 		struct stat statbuf;
 		stat(url.c_str(), &statbuf);
@@ -254,8 +256,7 @@ int computeSegmentDownloadTime(int timestamp, std::map<int, int> tileQuality, in
 			bytes -= bw;
 			ms++;
 		}
-		dlTimeMs += ms;
-
+		dlTimeMs += ms; 
 	}
 	auto bwEstimate = dlBytes * (1000.0 / dlTimeMs);
 	au->setBandwidthEstimate(bwEstimate);
@@ -319,7 +320,7 @@ int main(int argc, char* argv[])
 	csv << "Stable State,Network Trace,Type,Cache Size (MB),Stalling Start,Stalling Duration\n";
 
 
-	std::ifstream file("/home/arak/360server/traces/mytrace.down");	
+	std::ifstream file(TRACEPATH);	
 	std::string line;
 	int ts;
 	while (!file.eof())
@@ -356,31 +357,31 @@ int main(int argc, char* argv[])
 
 
 			
-			//Config::instance()->popularity = true;
-			//Config::instance()->viewportPrediction = false;
-			//Config::instance()->transitions = false;
-			//Config::instance()->bwAdaption = false;
+			Config::instance()->popularity = true;
+			Config::instance()->viewportPrediction = false;
+			Config::instance()->transitions = false;
+			Config::instance()->bwAdaption = false;
 			//httpClient->Get("/tracereset");
 			auto startTime = TIME_NOW_EPOCH_MS;
 			auto playbackTime = 0;
 			auto stallTime = 0;
-			//downloadTrace(cacheInitTraces[0], [&](int segment)
-			//{
-			//	std::cout << "\rPopular " << segment + 1 << "/" << numSegments << std::flush;
-			//	auto tileQuality = au->getCurrentTileQuality();
-			//	playbackTime += computeSegmentDownloadTime(playbackTime, tileQuality, segment);
-			//	int stallTimeMs = playbackTime - ((segment + 1) * 1500 + stallTime);
-			//	if (stallTimeMs > 0)
-			//	{
-			//		stallTime += stallTimeMs;
-			//		csv << i << "," << currentTrace << ",Popular," << currentCacheSize << "," << playbackTime << "," << stallTimeMs << "\n";
-			//	}
-			//	else
-			//		playbackTime -= stallTimeMs;
-			//});
-			//csv.flush();			
-			//std::cout << "   BHR " << au->byteHitrate() << std::endl;
-			//au->resetCacheHitrateVars();
+			downloadTrace(cacheInitTraces[0], [&](int segment)
+			{
+				std::cout << "\rPopular " << segment + 1 << "/" << numSegments << std::flush;
+				auto tileQuality = au->getCurrentTileQuality();
+				playbackTime += computeSegmentDownloadTime(playbackTime, tileQuality, segment);
+				int stallTimeMs = playbackTime - ((segment + 1) * 1500 + stallTime);
+				if (stallTimeMs > 0)
+				{
+					stallTime += stallTimeMs;
+					csv << i << "," << currentTrace << ",Popular," << currentCacheSize << "," << playbackTime << "," << stallTimeMs << "\n";
+				}
+				else
+					playbackTime -= stallTimeMs;
+			});
+			csv.flush();			
+			std::cout << "   BHR " << au->byteHitrate() << std::endl;
+			au->resetCacheHitrateVars();
 
 
 
@@ -392,11 +393,11 @@ int main(int argc, char* argv[])
 			startTime = TIME_NOW_EPOCH_MS;
 			playbackTime = 0;
 			stallTime = 0;
-			downloadTrace(evalTraces[i], [&](int segment, std::vector<int> downloadOrder)
+			downloadTrace(evalTraces[i], [&](int segment)
 			{
 				std::cout << "\rTransition " << segment + 1 << "/" << numSegments << std::flush;
 				auto tileQuality = au->getCurrentTileQuality();
-				playbackTime += computeSegmentDownloadTime(playbackTime, tileQuality, segment, downloadOrder);
+				playbackTime += computeSegmentDownloadTime(playbackTime, tileQuality, segment);
 				int stallTimeMs = playbackTime - ((segment + 1) * 1500 + stallTime);
 				if (stallTimeMs > 0)
 				{
@@ -412,88 +413,88 @@ int main(int argc, char* argv[])
 
 
 
-			//Config::instance()->popularity = false;
-			//Config::instance()->viewportPrediction = true;
-			//Config::instance()->transitions = false;
-			//Config::instance()->bwAdaption = false;
-			////httpClient->Get("/tracereset");
-			//startTime = TIME_NOW_EPOCH_MS;
-			//playbackTime = 0;
-			//stallTime = 0;
-			//downloadTrace(evalTraces[i], [&](int segment)
-			//{
-			//	std::cout << "\rPrediction " << segment + 1 << "/" << numSegments << std::flush;
-			//	auto tileQuality = au->getCurrentTileQuality();
-			//	playbackTime += computeSegmentDownloadTime(playbackTime, tileQuality, segment);
-			//	int stallTimeMs = playbackTime - ((segment + 1) * 1500 + stallTime);
-			//	if (stallTimeMs > 0)
-			//	{
-			//		stallTime += stallTimeMs;
-			//		csv << i << "," << currentTrace << ",Prediction," << currentCacheSize << "," << playbackTime  << "," << stallTimeMs << "\n";
-			//	}
-			//	else
-			//		playbackTime -= stallTimeMs;
-			//});
-			//csv.flush();
-			//std::cout << "   BHR " << au->byteHitrate() << std::endl;
-			//au->resetCacheHitrateVars();
+			Config::instance()->popularity = false;
+			Config::instance()->viewportPrediction = true;
+			Config::instance()->transitions = false;
+			Config::instance()->bwAdaption = false;
+			//httpClient->Get("/tracereset");
+			startTime = TIME_NOW_EPOCH_MS;
+			playbackTime = 0;
+			stallTime = 0;
+			downloadTrace(evalTraces[i], [&](int segment)
+			{
+				std::cout << "\rPrediction " << segment + 1 << "/" << numSegments << std::flush;
+				auto tileQuality = au->getCurrentTileQuality();
+				playbackTime += computeSegmentDownloadTime(playbackTime, tileQuality, segment);
+				int stallTimeMs = playbackTime - ((segment + 1) * 1500 + stallTime);
+				if (stallTimeMs > 0)
+				{
+					stallTime += stallTimeMs;
+					csv << i << "," << currentTrace << ",Prediction," << currentCacheSize << "," << playbackTime  << "," << stallTimeMs << "\n";
+				}
+				else
+					playbackTime -= stallTimeMs;
+			});
+			csv.flush();
+			std::cout << "   BHR " << au->byteHitrate() << std::endl;
+			au->resetCacheHitrateVars();
 
 
-			//
-			//Config::instance()->popularity = false;
-			//Config::instance()->viewportPrediction = true;
-			//Config::instance()->transitions = false;
-			//Config::instance()->bwAdaption = true;
-			////httpClient->Get("/tracereset");
-			//startTime = TIME_NOW_EPOCH_MS;
-			//playbackTime = 0;
-			//stallTime = 0;
-			//downloadTrace(evalTraces[i], [&](int segment)
-			//{
-			//	std::cout << "\rPredictionBWA " << segment + 1 << "/" << numSegments << std::flush;
-			//	auto tileQuality = au->getCurrentTileQuality();
-			//	playbackTime += computeSegmentDownloadTime(playbackTime, tileQuality, segment);
-			//	int stallTimeMs = playbackTime - ((segment + 1) * 1500 + stallTime);
-			//	if (stallTimeMs > 0)
-			//	{
-			//		stallTime += stallTimeMs;
-			//		csv << i << "," << currentTrace << ",PredictionBWA," << currentCacheSize << "," << playbackTime << "," << stallTimeMs << "\n";
-			//	}
-			//	else
-			//		playbackTime -= stallTimeMs;
-			//});
-			//csv.flush();
-			//std::cout << "   BHR " << au->byteHitrate() << std::endl;
-			//au->resetCacheHitrateVars();
+			
+			Config::instance()->popularity = false;
+			Config::instance()->viewportPrediction = true;
+			Config::instance()->transitions = false;
+			Config::instance()->bwAdaption = true;
+			//httpClient->Get("/tracereset");
+			startTime = TIME_NOW_EPOCH_MS;
+			playbackTime = 0;
+			stallTime = 0;
+			downloadTrace(evalTraces[i], [&](int segment)
+			{
+				std::cout << "\rPredictionBWA " << segment + 1 << "/" << numSegments << std::flush;
+				auto tileQuality = au->getCurrentTileQuality();
+				playbackTime += computeSegmentDownloadTime(playbackTime, tileQuality, segment);
+				int stallTimeMs = playbackTime - ((segment + 1) * 1500 + stallTime);
+				if (stallTimeMs > 0)
+				{
+					stallTime += stallTimeMs;
+					csv << i << "," << currentTrace << ",PredictionBWA," << currentCacheSize << "," << playbackTime << "," << stallTimeMs << "\n";
+				}
+				else
+					playbackTime -= stallTimeMs;
+			});
+			csv.flush();
+			std::cout << "   BHR " << au->byteHitrate() << std::endl;
+			au->resetCacheHitrateVars();
 
 
 
 
-			//Config::instance()->popularity = false;
-			//Config::instance()->viewportPrediction = false;
-			//Config::instance()->transitions = false;
-			//Config::instance()->bwAdaption = false;
-			////httpClient->Get("/tracereset");
-			//startTime = TIME_NOW_EPOCH_MS;
-			//playbackTime = 0;
-			//stallTime = 0;
-			//downloadTrace(cacheInitTraces[0], [&](int segment)
-			//{
-			//	std::cout << "\rNaive " << segment + 1 << "/" << numSegments << std::flush;
-			//	auto tileQuality = std::map<int,int>();
-			//	playbackTime += computeSegmentDownloadTime(playbackTime, tileQuality, segment);
-			//	int stallTimeMs = playbackTime - ((segment + 1) * 1500 + stallTime);
-			//	if (stallTimeMs > 0)
-			//	{
-			//		stallTime += stallTimeMs;
-			//		csv << i << "," << currentTrace << ",Naive," << currentCacheSize << "," << playbackTime << "," << stallTimeMs << "\n";
-			//	}
-			//	else
-			//		playbackTime -= stallTimeMs;
-			//});
-			//csv.flush();
-			//std::cout << "   BHR " << au->byteHitrate() << std::endl;
-			//au->resetCacheHitrateVars();
+			Config::instance()->popularity = false;
+			Config::instance()->viewportPrediction = false;
+			Config::instance()->transitions = false;
+			Config::instance()->bwAdaption = false;
+			//httpClient->Get("/tracereset");
+			startTime = TIME_NOW_EPOCH_MS;
+			playbackTime = 0;
+			stallTime = 0;
+			downloadTrace(cacheInitTraces[0], [&](int segment)
+			{
+				std::cout << "\rNaive " << segment + 1 << "/" << numSegments << std::flush;
+				auto tileQuality = std::map<int,int>();
+				playbackTime += computeSegmentDownloadTime(playbackTime, tileQuality, segment);
+				int stallTimeMs = playbackTime - ((segment + 1) * 1500 + stallTime);
+				if (stallTimeMs > 0)
+				{
+					stallTime += stallTimeMs;
+					csv << i << "," << currentTrace << ",Naive," << currentCacheSize << "," << playbackTime << "," << stallTimeMs << "\n";
+				}
+				else
+					playbackTime -= stallTimeMs;
+			});
+			csv.flush();
+			std::cout << "   BHR " << au->byteHitrate() << std::endl;
+			au->resetCacheHitrateVars();
 		}
 	}
 	csv.close();

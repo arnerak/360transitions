@@ -227,31 +227,4 @@ int main(int argc, char* argv[])
 	}
 	csv.close();
 	tracesUsed.close();
-
-	// add popularity statistics to mpd file
-	//XMLDocument& xml = mpd->getXML();
-	//auto period = xml.FirstChildElement()->FirstChildElement("Period");
-	//if (period->FirstChildElement("Popularity") == NULL)
-	//{
-	//	auto popularity = xml.NewElement("Popularity");
-	//	i = 0;
-	//	for (auto it = tileVisibility.begin(); it != tileVisibility.end(); it++)
-	//	{
-	//		auto tp = xml.NewElement("SegmentPopularity");
-	//		tp->SetAttribute("segment", ++i);
-	//		std::string pops;
-	//		double max = std::max_element(it->second.begin(), it->second.end(), [](auto p1, auto p2) { return p1.second < p2.second; })->second;
-	//		for (auto it2 = it->second.begin(); it2 != it->second.end(); it2++)
-	//		{
-	//			it2->second = (int)(numQualityLevels - (numQualityLevels * (it2->second / max)));
-	//			pops += std::to_string((int)it2->second);
-	//			if (it2 != std::prev(it->second.end()))
-	//				pops += ",";
-	//		}
-	//		tp->SetAttribute("tileQuality", pops.c_str());
-	//		popularity->InsertEndChild(tp);
-	//	}
-	//	period->InsertFirstChild(popularity);
-	//	xml.SaveFile(mpdOut.c_str());
-	//}
 }

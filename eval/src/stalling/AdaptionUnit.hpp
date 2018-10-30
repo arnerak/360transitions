@@ -77,11 +77,11 @@ public:
 		return tileVisibilityMap;
 	}
 
-	std::vector<int> initAdaption(const std::pair<long long, Quaternion>& headRotation)
+	void initAdaption(const std::pair<long long, Quaternion>& headRotation)
 	{
 		CircularBuffer<std::pair<long long, Quaternion>> cb;
 		cb.push(headRotation);
-		return startAdaption(cb, 0, true);
+		startAdaption(cb, 0, true);
 	}
 
 	size_t bwEstimate() const
@@ -97,10 +97,8 @@ public:
 		bandwidthEstimate = bw;
 	}
 
-	std::vector<int> startAdaption(const CircularBuffer<std::pair<long long, Quaternion>>& headRotations, int segment, bool init = false)
+	void startAdaption(const CircularBuffer<std::pair<long long, Quaternion>>& headRotations, int segment, bool init = false)
 	{
-		std::vector<int> tileDownloadOrder;
-
 		if (init)
 			bandwidthEstimate = 2000000;
 		
@@ -132,14 +130,6 @@ public:
 			auto maxVisibility =highestPriorityTile->first;
 			auto visibilityPerQualityLevel = int(maxVisibility / (double)numQualityLevels);
 
-			// generate tile download order by visibility
-			std::sort(tileVisibility.begin(), tileVisibility.end(), [](auto p1, auto p2) { return p1.first < p2.first; });
-			for (std::pair<int, int> tilevis : tileVisibility)
-				tileDownloadOrder.push_back(tilevis.second);
-			for (int t = 0; t < numTiles; t++)
-				if (std::find(tileDownloadOrder.begin(), tileDownloadOrder.end(), t) == tileDownloadOrder.end())
-					tileDownloadOrder.push_back(t);
-
 			while (highestPriorityTile->first != 0)
 			{
 				// enhance quality of highest priority tile
@@ -169,15 +159,7 @@ public:
 		if (transition)
 		{
 			tileQuality = mpd->tilePopularity(segment);
-
-			// generate tile download order by popularity
-			tileDownloadOrder.clear();
-			for (int q = 0; q <= numQualityLevels; q++)
-				for (int i = 0; i < numTiles; i++)
-					if (tileQuality[i] == q)
-						tileDownloadOrder.push_back(i);
 		}
-		return tileDownloadOrder;
 	}
 
 	void stopAdaption()
