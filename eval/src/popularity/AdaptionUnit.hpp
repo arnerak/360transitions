@@ -11,6 +11,7 @@
 #include <numeric>
 #include <algorithm>
 #include <string>
+#include <map>
 
 #include "Quaternion.hpp"
 #include "mpd.h"

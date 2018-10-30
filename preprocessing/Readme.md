@@ -2,7 +2,7 @@
 
 Script for tiling equirectangular videos, encoding them with arbitrary bitrates and generating a DASH representation.
 
-[ffmpeg](https://ffmpeg.zeranoe.com/builds/), [ffprobe](https://ffmpeg.zeranoe.com/builds/) and [MP4Box](https://gpac.wp.imt.fr/downloads/) required in `PATH` or same folder as `tile_and_dash.py`.
+[ffmpeg](https://ffmpeg.zeranoe.com/builds/), [ffprobe](https://ffmpeg.zeranoe.com/builds/) and [MP4Box](https://gpac.wp.imt.fr/downloads/) executables required in `PATH` environment variable or same folder as `tile_and_dash.py`.
 
 #### Configuration inside Python script 
 ```

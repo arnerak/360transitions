@@ -12,6 +12,7 @@
 #include <sstream>
 #include "tinyxml2.h"
 #include <chrono>
+#include <map>
 using namespace tinyxml2;
 #define getattr(elem, attr) attr = elem->Attribute(#attr) ? elem->Attribute(#attr) : ""
 #define getattr_dur(elem, attr) if(elem->Attribute(#attr)) attr = parseDuration(elem->Attribute(#attr)); else attr = std::chrono::milliseconds(0);
